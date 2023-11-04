@@ -97,7 +97,7 @@ resource "aws_route_table_association" "route3" {
 }
 
 ###############
-# CLOUNDWATCH
+# CLOUDWATCH
 ###############
 
 resource "aws_cloudwatch_log_group" "techchallenge-logs" {
