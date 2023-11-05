@@ -106,6 +106,83 @@ resource "aws_cloudwatch_log_group" "techchallenge-logs" {
 }
 
 ###############
+# ALB
+###############
+
+# Security Group para o ALB
+resource "aws_security_group" "alb_sg" {
+  name   = "alb-sg"
+  vpc_id = aws_vpc.vpc.id
+
+  ingress {
+    description = "http"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "https"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+# Application Load Balancer (ALB)
+resource "aws_lb" "app_lb" {
+  name               = "app-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = [aws_subnet.sn1.id, aws_subnet.sn2.id, aws_subnet.sn3.id]
+
+  enable_deletion_protection = false
+}
+
+# Target Group para o ALB
+resource "aws_lb_target_group" "tg" {
+  name     = "app-tg"
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.vpc.id
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 5
+    path                = "/actuator/health"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    interval            = 30
+    matcher             = "200"
+  }
+}
+
+# Listener para o ALB
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.app_lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.tg.arn
+  }
+}
+
+###############
 # ECS
 ###############
 
@@ -128,6 +205,12 @@ resource "aws_ecs_service" "service" {
     assign_public_ip = true
     security_groups  = [aws_security_group.sg.id]
     subnets          = [aws_subnet.sn1.id, aws_subnet.sn2.id, aws_subnet.sn3.id]
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.tg.arn
+    container_name   = "app"
+    container_port   = 8080
   }
 }
 
