@@ -152,10 +152,11 @@ resource "aws_lb" "app_lb" {
 
 # Target Group para o ALB
 resource "aws_lb_target_group" "tg" {
-  name     = "app-tg"
-  port     = 8080
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.vpc.id
+  name        = "app-tg"
+  port        = 8080
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = aws_vpc.vpc.id
 
   health_check {
     enabled             = true
