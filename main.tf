@@ -167,7 +167,6 @@ resource "aws_lb_target_group" "tg" {
     protocol            = "HTTP"
     interval            = 30
     matcher             = "200"
-    start_period        = 180
   }
 }
 
@@ -229,6 +228,13 @@ resource "aws_ecs_task_definition" "td" {
           hostPort      = 8080
         }
       ]
+      healthCheck = {
+        command     = ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 5
+        startPeriod = 180
+      }
     }
   ])
   family                   = "app"
