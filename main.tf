@@ -167,6 +167,7 @@ resource "aws_lb_target_group" "tg" {
     protocol            = "HTTP"
     interval            = 30
     matcher             = "200"
+    start_period        = 180
   }
 }
 
